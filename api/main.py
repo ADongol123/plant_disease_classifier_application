@@ -28,22 +28,18 @@ CLASS_NAMES = [
     'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus', 'Tomato___healthy'
 ]
 
-# Function to preprocess the image before prediction
 def preprocess_image(img_bytes):
     # Open the image from the bytes object
     img = image.load_img(BytesIO(img_bytes), target_size=(128, 128))
 
-    # Convert the image to a numpy array and normalize it (scale pixel values to [0, 1])
-    img_array = image.img_to_array(img) / 255.0
+    # Convert the image to a numpy array
+    img_array = image.img_to_array(img)
 
-    # Add batch dimension (the model expects a batch of images)
     img_batch = np.expand_dims(img_array, axis=0)
 
     return img_batch
 
 
-# Prediction endpoint for FastAPI
-# Prediction endpoint for FastAPI
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
     # Read image file bytes
@@ -52,24 +48,35 @@ async def predict(file: UploadFile = File(...)):
     # Preprocess the image
     img_batch = preprocess_image(img_bytes)
 
+    # Debugging: Print the shape of the preprocessed image
+    print(f"Image batch shape: {img_batch.shape}")
+
     # Make the prediction using the trained model
     predictions = MODEL.predict(img_batch)
 
-    # Debugging: Print out the predictions shape and values
-    print("Predictions shape:", predictions.shape)
-    print("Predictions values:", predictions)
+    # Debugging: Print raw predictions
+    print(f"Raw predictions: {predictions}")
 
-    # If you are predicting a class, use argmax for classification (if output is a probability)
-    predicted_class = np.argmax(predictions, axis=-1)
+    # Use argmax for classification (if output is a probability distribution)
+    predicted_class_index = np.argmax(predictions)
 
     # Debugging: Print the predicted class index
-    print("Predicted class index:", predicted_class)
+    print(f"Predicted class index: {predicted_class_index}")
 
-    # Get the class name using the predicted index
-    predicted_class_name = CLASS_NAMES[predicted_class[0]]
-    print("Predicted class name:", predicted_class_name)
-    # Return the prediction result with the class name
-    return {"predicted_class": predicted_class_name}
+    # Map the predicted class index to the class name
+    predicted_class_name = CLASS_NAMES[predicted_class_index]
+
+    confidence = np.max(predictions) * 100
+    confidence_str = f"{confidence:.2f}%"
+
+    print(f"Confidence Level: {confidence}")
+
+    # Debugging: Print the predicted class name
+    print(f"Predicted class name: {predicted_class_name}")
+
+    return {"predicted_class": predicted_class_name,
+            "confidence": confidence_str
+            }
 
 
 # To run the FastAPI server (uncomment the following lines if running directly)
