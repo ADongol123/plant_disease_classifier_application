@@ -1,16 +1,32 @@
-# Import necessary libraries
 from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from tensorflow.keras.preprocessing import image
 import numpy as np
 from tensorflow.keras.models import load_model
 from io import BytesIO
 import uvicorn
+import os
+import requests
 
 # Load your trained model
 MODEL = load_model("../models/trained_plant_disease_model.keras")
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Define CORS settings
+origins = [
+    "http://localhost",
+    "http://localhost:3000",
+    "http://localhost:5173"
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Class names for predictions
 CLASS_NAMES = [
@@ -28,6 +44,29 @@ CLASS_NAMES = [
     'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus', 'Tomato___healthy'
 ]
 
+# Scientific information for each plant disease
+SCIENTIFIC_INFO = {
+    'Apple___Apple_scab': "Apple scab is caused by the fungus Venturia inaequalis, leading to dark, sunken lesions on leaves and fruit.",
+    'Apple___Black_rot': "Black rot is caused by the bacterium Xanthomonas campestris and affects apples by causing dark, sunken lesions on fruit.",
+    'Apple___Cedar_apple_rust': "Cedar apple rust is caused by the fungus Gymnosporangium juniperi-virginianae, which affects apples and cedars.",
+    'Apple___healthy': "Healthy apple plants are free of any visible disease or damage.",
+    # Add more scientific information for other classes here
+    'Tomato___healthy': "Healthy tomatoes are free from disease and show no signs of stress or infection."
+}
+
+# Care recommendations for each plant disease
+CARE_RECOMMENDATIONS = {
+    'Apple___Apple_scab': "Use fungicides, remove infected leaves, and plant resistant varieties.",
+    'Apple___Black_rot': "Prune infected areas and apply copper-based fungicides.",
+    'Apple___Cedar_apple_rust': "Remove infected leaves and apply fungicides for control.",
+    'Apple___healthy': "Continue with standard care: water, prune, and fertilize as needed.",
+    'Tomato___healthy': "Ensure proper watering, sunlight, and periodic pruning to maintain health.",
+    # Add more care recommendations for other classes here
+}
+
+# Directory for disease-related images
+DISEASE_IMAGES_DIR = "../disease_images"  # You should store images of diseases here
+
 def preprocess_image(img_bytes):
     # Open the image from the bytes object
     img = image.load_img(BytesIO(img_bytes), target_size=(128, 128))
@@ -39,7 +78,6 @@ def preprocess_image(img_bytes):
 
     return img_batch
 
-
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
     # Read image file bytes
@@ -48,36 +86,46 @@ async def predict(file: UploadFile = File(...)):
     # Preprocess the image
     img_batch = preprocess_image(img_bytes)
 
-    # Debugging: Print the shape of the preprocessed image
-    print(f"Image batch shape: {img_batch.shape}")
-
     # Make the prediction using the trained model
     predictions = MODEL.predict(img_batch)
 
-    # Debugging: Print raw predictions
-    print(f"Raw predictions: {predictions}")
-
-    # Use argmax for classification (if output is a probability distribution)
+    # Use argmax for classification
     predicted_class_index = np.argmax(predictions)
-
-    # Debugging: Print the predicted class index
-    print(f"Predicted class index: {predicted_class_index}")
 
     # Map the predicted class index to the class name
     predicted_class_name = CLASS_NAMES[predicted_class_index]
 
+    # Retrieve scientific information for the predicted class
+    disease_info = SCIENTIFIC_INFO.get(predicted_class_name, "No scientific information available.")
+    
+    # Retrieve care recommendations for the predicted class
+    care_info = CARE_RECOMMENDATIONS.get(predicted_class_name, "No care recommendations available.")
+
+    # Confidence level of the prediction
     confidence = np.max(predictions) * 100
     confidence_str = f"{confidence:.2f}%"
 
-    print(f"Confidence Level: {confidence}")
+    # Fetch an image related to the disease (if it exists in the directory)
+    disease_image_path = os.path.join(DISEASE_IMAGES_DIR, f"{predicted_class_name}.jpg")
+    disease_image_url = disease_image_path if os.path.exists(disease_image_path) else None
 
-    # Debugging: Print the predicted class name
-    print(f"Predicted class name: {predicted_class_name}")
+    return {
+        "predicted_class": predicted_class_name,
+        "confidence": confidence_str,
+        "scientific_info": disease_info,
+        "care_info": care_info,
+        "disease_image_url": disease_image_url
+    }
 
-    return {"predicted_class": predicted_class_name,
-            "confidence": confidence_str
-            }
+@app.post("/log_plant/")
+async def log_plant_data(disease: str, care_taken: str, note: str):
+    # Save plant logs to a simple file or database
+    log_entry = f"Disease: {disease}, Care: {care_taken}, Note: {note}\n"
+    
+    with open("plant_journal.txt", "a") as f:
+        f.write(log_entry)
 
+    return {"message": "Plant care logged successfully."}
 
 # To run the FastAPI server (uncomment the following lines if running directly)
 if __name__ == "__main__":
