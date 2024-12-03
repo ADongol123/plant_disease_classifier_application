@@ -4,7 +4,7 @@ const UploadSection = () => {
   const [results, setResults]: any = useState([]); // State to store multiple results
   const [error, setError]: any = useState(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null); // State to store image preview
-
+  console.log(results, "result");
   const handleUpload = async (event: any) => {
     event.preventDefault();
 
@@ -40,7 +40,7 @@ const UploadSection = () => {
       setError(null);
 
       // Add the new result to the results array
-      setResults((prevResults : any) => [
+      setResults((prevResults: any) => [
         ...prevResults,
         { imagePreview, result: data }, // Store the preview and result together
       ]);
@@ -76,27 +76,42 @@ const UploadSection = () => {
         </div>
       )}
 
-      {results.length > 0 && (
+      {results?.length > 0 && (
         <div className="mt-6 space-y-6">
-          {results.map(({resultObj, index} : any)=> (
-            <div key={index} className="p-4 bg-green-50 border border-green-400 rounded">
-              <h3 className="text-green-700 font-bold">Analysis Result #{index + 1}</h3>
-              <div className="mt-4">
-                <h3 className="text-gray-700 font-bold">Image Preview</h3>
-                <img
-                  src={resultObj.imagePreview}
-                  alt={`Selected ${index + 1}`}
-                  className="mt-2 border rounded-md max-w-full"
-                />
+          {results?.map((resultObj : any, index: any) => {
+            console.log(resultObj,"1234")
+            return (
+              <div
+                key={index}
+                className="p-4 bg-green-50 border border-green-400 rounded"
+              >
+                <h3 className="text-green-700 font-bold">
+                  Analysis Result #{index + 1}
+                </h3>
+                <div className="mt-4">
+                  <h3 className="text-gray-700 font-bold">Image Preview</h3>
+                  <img
+                    src={resultObj?.imagePreview}
+                    alt={`Selected ${index + 1}`}
+                    className="mt-2 border rounded-md max-w-full"
+                  />
+                </div>
+                <p>
+                  <strong>Disease:</strong> {resultObj?.result?.predicted_class}
+                </p>
+                <p>
+                  <strong>Confidence:</strong> {resultObj?.result?.confidence}
+                </p>
+                <p>
+                  <strong>Care Info:</strong> {resultObj?.result?.care_info}
+                </p>
+                <p>
+                  <strong>Scientific Info:</strong>{" "}
+                  {resultObj?.result?.scientific_info}
+                </p>
               </div>
-              <p>
-                <strong>Disease:</strong> {resultObj.result.predicted_class}
-              </p>
-              <p>
-                <strong>Confidence:</strong> {resultObj.result.confidence}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
