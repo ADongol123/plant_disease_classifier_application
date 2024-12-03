@@ -6,7 +6,12 @@ from tensorflow.keras.models import load_model
 from io import BytesIO
 import uvicorn
 import os
+from dotenv import load_dotenv
 import requests
+
+load_dotenv()  # This will load the variables from .env file
+
+API_KEY = os.getenv("API_KEY")
 
 # Load your trained model
 MODEL = load_model("../models/trained_plant_disease_model.keras")
@@ -78,6 +83,29 @@ def preprocess_image(img_bytes):
 
     return img_batch
 
+
+@app.post("/identify/")
+async def identify_plant(file: UploadFile = File(...)):
+    img_bytes = await file.read()
+    
+    # Send a POST request to the Plant.id API
+    url = "https://api.plant.id/v2/identify"
+    headers = {
+        "Api-Key": API_KEY
+    }
+    files = {
+        "image": ("image.jpg", img_bytes, "image/jpeg")
+    }
+    
+    response = requests.post(url, headers=headers, files=files)
+    
+    if response.status_code == 200:
+        data = response.json()
+        return data  # Or process the data as needed
+    else:
+        return {"error": "Could not identify plant", "status_code": response.status_code}
+    
+
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
     # Read image file bytes
@@ -97,7 +125,7 @@ async def predict(file: UploadFile = File(...)):
 
     # Retrieve scientific information for the predicted class
     disease_info = SCIENTIFIC_INFO.get(predicted_class_name, "No scientific information available.")
-    
+        
     # Retrieve care recommendations for the predicted class
     care_info = CARE_RECOMMENDATIONS.get(predicted_class_name, "No care recommendations available.")
 
@@ -121,7 +149,7 @@ async def predict(file: UploadFile = File(...)):
 async def log_plant_data(disease: str, care_taken: str, note: str):
     # Save plant logs to a simple file or database
     log_entry = f"Disease: {disease}, Care: {care_taken}, Note: {note}\n"
-    
+        
     with open("plant_journal.txt", "a") as f:
         f.write(log_entry)
 
