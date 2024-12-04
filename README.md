@@ -37,3 +37,27 @@ This dataset contains images of plant leaves with various diseases for different
 ```bash
 git clone https://github.com/your-username/plant-disease-prediction.git
 cd plant-disease-prediction
+```
+### 2. Backend Setup (Python + FastAPI)
+
+### Create a virtual environment and activate it:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+```
+### Install the required dependencies:
+```bash
+pip install -r requirements.txt
+```
+### Train the model
+### Run the Fasts APi backend
+```bash
+uvicorn app.main:app --reload
+```
+
+## 5. Future Enhancements
+
+- **Real-time disease detection**: Implement real-time prediction using a webcam feature to capture and analyze plant leaf images instantly.
+- **Mobile support**: Enhance the app for better mobile responsiveness, ensuring a smooth experience across different devices.
+- **Model improvement**: Experiment with more advanced models and data augmentation techniques to improve the accuracy of the predictions.
+
