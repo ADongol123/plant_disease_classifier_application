@@ -3,7 +3,7 @@ cuda
 .idea
 models
 training/tract_models
-
+.env
 
 # Web Applications
 web/plant/node_modules
