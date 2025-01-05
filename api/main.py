@@ -6,12 +6,12 @@ from tensorflow.keras.models import load_model
 from io import BytesIO
 import uvicorn
 import os
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import requests
 
-load_dotenv()  # This will load the variables from .env file
+# load_dotenv()  # This will load the variables from .env file
 
-API_KEY = os.getenv("API_KEY")
+# API_KEY = os.getenv("API_KEY")
 
 # Load your trained model
 MODEL = load_model("../models/trained_plant_disease_model.keras")
@@ -91,7 +91,7 @@ async def identify_plant(file: UploadFile = File(...)):
     # Send a POST request to the Plant.id API
     url = "https://api.plant.id/v2/identify"
     headers = {
-        "Api-Key": API_KEY
+        # "Api-Key": API_KEY
     }
     files = {
         "image": ("image.jpg", img_bytes, "image/jpeg")
