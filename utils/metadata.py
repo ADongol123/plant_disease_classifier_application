@@ -51,7 +51,7 @@ def create_metadata(data_dir):
                     'image_filename': image_file,
                     'plant_species': plant_species,
                     'disease_label': disease_label,
-                    'image': image_base64,  # Store the base64 string here
+                    # 'image': image_base64,  # Store the base64 string here
                 })
 
     df = pd.DataFrame(data)
