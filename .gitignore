@@ -5,6 +5,19 @@ models
 training/tract_models
 .env
 
+
+chat/logs
+chat/descriptive_csv.csv
+chat/0.26.0
+chat/bert
+chat/.ipynb_checkpoints
+chat/gpt2_chat_model
+chat/gpt2_finetuned
+chat/gpt2_finetuned_model
+
 # Web Applications
 web/plant/node_modules
-chat
+# # chat/gpt2_finetuned
+# # chat/gpt2_finetuned_model
+# # chat/logs
+# chat/descriptive_csv.csv
