@@ -17,7 +17,3 @@ chat/gpt2_finetuned_model
 
 # Web Applications
 web/plant/node_modules
-# # chat/gpt2_finetuned
-# # chat/gpt2_finetuned_model
-# # chat/logs
-# chat/descriptive_csv.csv
