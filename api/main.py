@@ -6,6 +6,17 @@ from tensorflow.keras.models import load_model
 from io import BytesIO
 import uvicorn
 import os
+from flask import Flask, request, jsonify
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+
+
+# Load the model and tokenizer
+model_name = "../chat/gpt2_finetuned_model"  # Replace with your model's name or path
+model = AutoModelForCausalLM.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+
 # from dotenv import load_dotenv
 import requests
 
@@ -14,7 +25,7 @@ import requests
 # API_KEY = os.getenv("API_KEY")
 
 # Load your trained model
-MODEL = load_model("../models/trained_plant_disease_model.keras")
+MODEL = load_model("../training/trained_plant_disease_model.keras")
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -32,6 +43,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Class names for predictions
 CLASS_NAMES = [
@@ -155,6 +167,84 @@ async def log_plant_data(disease: str, care_taken: str, note: str):
 
     return {"message": "Plant care logged successfully."}
 
+
+
+
+
+
+
+
+
+
+
+
+
+# Define the chat function
+def chat_with_model(model, tokenizer, input_text, max_length=100, temperature=0.7, top_k=50, top_p=0.95):
+    # Append a separator token to the input text
+    input_text = f"{input_text} {tokenizer.eos_token}"
+
+    # Tokenize the input text
+    inputs = tokenizer(input_text, return_tensors="pt")
+
+    # Ensure the model is on the correct device (GPU or CPU)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = model.to(device)
+    inputs = {key: value.to(device) for key, value in inputs.items()}
+
+    # Generate a response
+    output = model.generate(
+        inputs['input_ids'],
+        attention_mask=inputs['attention_mask'],  # Pass attention_mask
+        max_length=max_length,                   # Increase max_length for longer responses
+        num_return_sequences=1,
+        temperature=temperature,  # Adjust temperature for more varied responses
+        top_k=top_k,              # Limit sampling to top-k tokens
+        top_p=top_p,              # Use nucleus sampling
+        do_sample=True,           # Enable sampling (instead of greedy decoding)
+        pad_token_id=tokenizer.eos_token_id  # Set pad_token_id to eos_token_id
+    )
+
+    # Decode the output text
+    generated_text = tokenizer.decode(output[0], skip_special_tokens=True)
+    
+    # Remove the input text from the generated response
+    generated_text = generated_text[len(input_text):].strip()
+    
+    return generated_text
+
+# Define API route
+@app.post("/chat/")
+async def chat(data: dict):
+    if 'input_text' not in data:
+        return {"error": "Missing 'input_text' in request"}, 400
+
+    input_text = data['input_text']
+    try:
+        response = chat_with_model(model, tokenizer, input_text)
+        return {"response": response}
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # To run the FastAPI server (uncomment the following lines if running directly)
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+
+
+

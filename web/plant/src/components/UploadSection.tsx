@@ -1,33 +1,65 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { FaCloudUploadAlt } from "react-icons/fa";
-import Banner from "../assets/banner.png"
-const UploadSection = () => {
+import Banner from "../assets/banner.png";
+
+const UploadSection = ({ setFiles, files }: any) => {
   const [imagePreview, setImagePreview] = useState<string | null>(null); // State to store image preview
-  const [files, setFiles] = useState(null); // State to store selected files
-  const fileInputRef:any = useRef(null); // File input reference
+  const [isDragging, setIsDragging] = useState<boolean>(false); // State to track drag-over status
+  const fileInputRef = React.useRef<HTMLInputElement>(null); // File input reference
 
   // Handle file selection from browse button
-  const handleBrowseClick = (e: any) => {
-    fileInputRef.current.click(); // Trigger the file input click
+  const handleBrowseClick = () => {
+    fileInputRef.current?.click(); // Trigger the file input click
   };
 
   // Handle file change (when file is selected)
-  const handleFileChange = (e: any) => {
-    const selectedFile = e.target.files[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      // Create a preview of the selected image
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string); // Set the image preview
-      };
-      reader.readAsDataURL(selectedFile); // Read the file as a data URL
+      previewFile(selectedFile);
+    }
+  };
+
+  // Create a preview and set files
+  const previewFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string); // Set the image preview
+      setFiles(file); // Pass the file to the parent
+    };
+    reader.readAsDataURL(file); // Read the file as a data URL
+  };
+
+  // Handle drag events
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true); // Indicate drag is active
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false); // Indicate drag is inactive
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false); // Reset drag status
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile) {
+      previewFile(droppedFile); // Preview and set file
     }
   };
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg h-[400px] flex flex-col gap-2">
-      <form
-        className="space-y-4 border-dashed border-2 flex flex-col items-center justify-center py-2"
+      {/* Drag-and-drop area */}
+      <div
+        className={`space-y-4 border-dashed border-2 py-2 flex flex-col items-center justify-center ${
+          isDragging ? "border-[#85b580]" : "border-gray-300"
+        }`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
         <FaCloudUploadAlt className="h-[50px] w-[50px] text-[#85b580]" />
         <h1 className="text-[20px] font-semibold flex gap-2">
@@ -47,10 +79,10 @@ const UploadSection = () => {
             />
           </div>
         </h1>
-      </form>
+      </div>
 
+      {/* Preview section */}
       <div className="mt-4 overflow-hidden bg-contain">
-        {/* Show the selected image preview */}
         {imagePreview ? (
           <img
             src={imagePreview}
